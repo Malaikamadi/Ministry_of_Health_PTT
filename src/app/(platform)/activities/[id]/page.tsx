@@ -83,11 +83,11 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ id: s
             const isCurrent = status === activity.status;
             return (
               <div key={status} className="flex items-center gap-1 shrink-0">
-                <div className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${isCurrent ? 'ring-2 shadow-sm' : ''}`}
+                <div className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${isCurrent ? 'shadow-sm' : ''}`}
                   style={{
                     background: isReached ? `${statusCfg.color}10` : '#F8FAFC',
                     color: isReached ? statusCfg.color : '#CBD5E1',
-                    ringColor: isCurrent ? statusCfg.color : 'transparent',
+                    boxShadow: isCurrent ? `0 0 0 2px ${statusCfg.color}` : undefined,
                   }}
                 >
                   <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: isReached ? statusCfg.color : '#E2E8F0' }}>

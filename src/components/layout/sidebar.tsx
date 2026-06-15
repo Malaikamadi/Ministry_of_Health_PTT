@@ -25,7 +25,7 @@ import { useAuth, getRoleLabel } from '@/lib/auth-context';
 interface NavItem {
   href: string;
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
 }
 
 interface NavSection {
