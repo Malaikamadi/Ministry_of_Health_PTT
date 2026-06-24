@@ -5,16 +5,23 @@ import { FileText, Download, BarChart3, Building2, Activity, Calendar } from 'lu
 import { directorates } from '@/data/directorates';
 import { activities, activityStatusConfig } from '@/data/activities';
 import { units } from '@/data/units';
+import { unitReports, getReportsByDirectorate, reportStatusConfig, reportTypeLabels } from '@/data/unit-reports';
+import { useAuth } from '@/lib/auth-context';
 import { formatDate } from '@/lib/utils';
 
 export default function ReportsPage() {
+  const { user } = useAuth();
   const [reportType, setReportType] = useState('ministry');
   const [period, setPeriod] = useState('quarterly');
   const [filterDir, setFilterDir] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
 
-  const completedCount = activities.filter((a) => a.status === 'completed').length;
-  const avgPerformance = Math.round(directorates.reduce((s, d) => s + d.performanceScore, 0) / directorates.length);
+  const filteredDirectorates = user?.role === 'directorate_admin' ? directorates.filter(d => d.id === user.directorateId) : directorates;
+  const filteredActivities = user?.role === 'directorate_admin' ? activities.filter(a => a.directorateId === user.directorateId) : activities;
+  const filteredReports = user?.role === 'directorate_admin' ? getReportsByDirectorate(user.directorateId!) : unitReports;
+
+  const completedCount = filteredActivities.filter((a) => a.status === 'completed').length;
+  const avgPerformance = filteredDirectorates.length > 0 ? Math.round(filteredDirectorates.reduce((s, d) => s + d.performanceScore, 0) / filteredDirectorates.length) : 0;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -54,7 +61,7 @@ export default function ReportsPage() {
             <label className="form-label">Directorate</label>
             <select value={filterDir} onChange={(e) => setFilterDir(e.target.value)} className="form-select">
               <option value="all">All Directorates</option>
-              {directorates.map((d) => <option key={d.id} value={d.id}>{d.code}</option>)}
+              {filteredDirectorates.map((d) => <option key={d.id} value={d.id}>{d.code}</option>)}
             </select>
           </div>
           <div>
@@ -85,11 +92,11 @@ export default function ReportsPage() {
           {/* Summary Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
             <div className="text-center p-4 rounded-xl" style={{ background: '#F8FAFC' }}>
-              <p className="text-2xl font-bold" style={{ color: '#0F4C81' }}>{directorates.length}</p>
+              <p className="text-2xl font-bold" style={{ color: '#0F4C81' }}>{filteredDirectorates.length}</p>
               <p className="text-xs" style={{ color: '#94A3B8' }}>Directorates</p>
             </div>
             <div className="text-center p-4 rounded-xl" style={{ background: '#F8FAFC' }}>
-              <p className="text-2xl font-bold" style={{ color: '#00897B' }}>{activities.length}</p>
+              <p className="text-2xl font-bold" style={{ color: '#00897B' }}>{filteredActivities.length}</p>
               <p className="text-xs" style={{ color: '#94A3B8' }}>Total Activities</p>
             </div>
             <div className="text-center p-4 rounded-xl" style={{ background: '#F8FAFC' }}>
@@ -108,7 +115,7 @@ export default function ReportsPage() {
             <table className="data-table">
               <thead><tr><th>Directorate</th><th>Units</th><th>Activities</th><th>Completed</th><th>In Progress</th><th>Overdue</th><th>Performance</th></tr></thead>
               <tbody>
-                {directorates.map((dir) => (
+                {filteredDirectorates.map((dir) => (
                   <tr key={dir.id}>
                     <td><div className="flex items-center gap-2"><span className="badge-primary badge text-[10px]">{dir.code}</span><span className="text-sm font-semibold">{dir.name}</span></div></td>
                     <td className="text-sm tabular-nums">{dir.totalUnits}</td>
@@ -132,9 +139,9 @@ export default function ReportsPage() {
 
           {/* Status Distribution */}
           <h3 className="heading-section mb-3">Activity Status Distribution</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-8">
             {Object.entries(activityStatusConfig).map(([key, cfg]) => {
-              const count = activities.filter((a) => a.status === key).length;
+              const count = filteredActivities.filter((a) => a.status === key).length;
               return (
                 <div key={key} className="p-3 rounded-xl text-center" style={{ background: `${cfg.color}08` }}>
                   <div className="w-3 h-3 rounded-full mx-auto mb-1.5" style={{ background: cfg.color }} />
@@ -144,6 +151,42 @@ export default function ReportsPage() {
               );
             })}
           </div>
+
+          {/* Unit Reports Table */}
+          <h3 className="heading-section mb-3">Submitted Unit Reports</h3>
+          {filteredReports.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="data-table">
+                <thead><tr><th>Report Title</th><th>Unit</th><th>Type</th><th>Period</th><th>Date</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                  {filteredReports.map((report) => {
+                    const statusCfg = reportStatusConfig[report.status];
+                    return (
+                      <tr key={report.id}>
+                        <td>
+                          <div className="flex items-center gap-2">
+                            <FileText className="w-4 h-4 shrink-0" style={{ color: '#0F4C81' }} />
+                            <span className="text-sm font-medium" style={{ color: '#1E293B' }}>{report.title}</span>
+                          </div>
+                        </td>
+                        <td className="text-sm">{report.unitName}</td>
+                        <td><span className="badge-slate badge text-[10px]">{reportTypeLabels[report.reportType]}</span></td>
+                        <td className="text-sm">{report.period}</td>
+                        <td className="text-sm tabular-nums">{formatDate(report.uploadedAt)}</td>
+                        <td><span className={`${statusCfg.badgeClass} badge text-[10px]`}>{statusCfg.label}</span></td>
+                        <td><button className="btn-ghost btn-sm" title="Download"><Download className="w-3.5 h-3.5" /></button></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="empty-state py-8">
+              <FileText className="w-10 h-10 mb-2" style={{ color: '#94A3B8' }} />
+              <p className="text-sm font-medium" style={{ color: '#64748B' }}>No reports available</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

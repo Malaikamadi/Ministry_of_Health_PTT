@@ -5,16 +5,19 @@ import { ClipboardCheck, Search, Plus, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { units } from '@/data/units';
 import { directorates } from '@/data/directorates';
+import { useAuth } from '@/lib/auth-context';
 
 export default function UnitsPage() {
+  const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [filterDir, setFilterDir] = useState('all');
   const [showCreate, setShowCreate] = useState(false);
 
   const filtered = units.filter((u) => {
     const matchSearch = u.name.toLowerCase().includes(search.toLowerCase()) || u.focalPerson.toLowerCase().includes(search.toLowerCase());
-    const matchDir = filterDir === 'all' || u.directorateId === filterDir;
-    return matchSearch && matchDir;
+    const matchDir = filterDir === 'all' ? true : u.directorateId === filterDir;
+    const matchRole = user?.role === 'directorate_admin' ? u.directorateId === user.directorateId : true;
+    return matchSearch && matchDir && matchRole;
   });
 
   return (

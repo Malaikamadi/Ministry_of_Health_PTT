@@ -87,7 +87,7 @@ export function Sidebar() {
         {
           label: 'Monitoring',
           items: [
-            { href: '/progress', label: 'Progress Tracking', icon: TrendingUp },
+            { href: '/progress', label: 'Performance Monitoring', icon: TrendingUp },
             { href: '/evidence', label: 'Evidence Repository', icon: FolderOpen },
             { href: '/reports', label: 'Reports', icon: FileText },
           ],

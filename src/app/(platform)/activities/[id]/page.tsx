@@ -1,7 +1,7 @@
 'use client';
 
 import { use, useState } from 'react';
-import { ArrowLeft, Activity, Building2, Clock, CheckCircle2, AlertTriangle, FileText, Download, MessageSquare, Upload, Calendar, User, MapPin, TrendingUp, Plus } from 'lucide-react';
+import { ArrowLeft, Activity, Building2, Clock, CheckCircle2, AlertTriangle, FileText, Download, MessageSquare, Upload, Calendar, User, MapPin, TrendingUp, Plus, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { activities, activityStatusConfig, type ActivityStatus } from '@/data/activities';
 import { formatDate } from '@/lib/utils';
@@ -12,6 +12,17 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ id: s
   const { id } = use(params);
   const activity = activities.find((a) => a.id === id);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [milestoneToggles, setMilestoneToggles] = useState<Record<string, boolean>>({});
+
+  // Feedback #2: Auto-calculate progress from milestones
+  const getAutoProgress = () => {
+    if (!activity) return 0;
+    if (!activity.milestones || activity.milestones.length === 0) return activity.progress;
+    const toggledCount = Object.values(milestoneToggles).filter(Boolean).length;
+    const alreadyCompleted = activity.milestones.filter((m) => m.completed).length;
+    const total = activity.milestones.length;
+    return Math.round(((alreadyCompleted + toggledCount) / total) * 100);
+  };
 
   if (!activity) {
     return (
@@ -216,7 +227,7 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ id: s
         )}
       </div>
 
-      {/* Update Progress Modal */}
+      {/* Update Progress Modal — Feedback #2: Automated from milestones */}
       {showUpdateModal && (
         <div className="modal-overlay" onClick={() => setShowUpdateModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -225,30 +236,70 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ id: s
               <p className="text-sm mt-1" style={{ color: '#94A3B8' }}>Record a new progress update for this activity.</p>
             </div>
             <div className="p-6 space-y-4">
-              <div>
-                <label className="form-label">Progress Percentage (%)</label>
-                <input type="number" min="0" max="100" className="form-input" placeholder="e.g., 45" defaultValue={activity.progress} />
+              {/* Auto-calculated progress display */}
+              <div className="p-4 rounded-xl text-center" style={{ background: 'rgba(15,76,129,0.04)' }}>
+                <p className="text-[10px] uppercase font-bold mb-1" style={{ color: '#94A3B8' }}>Calculated Progress</p>
+                <p className="text-3xl font-bold tabular-nums" style={{ color: '#0F4C81' }}>{getAutoProgress()}%</p>
+                <div className="progress-track h-2 mt-2 mx-auto" style={{ maxWidth: '200px' }}>
+                  <div className="progress-fill progress-fill-primary" style={{ width: `${getAutoProgress()}%` }} />
+                </div>
               </div>
+
+              <div className="p-3 rounded-xl flex items-start gap-2" style={{ background: 'rgba(46,125,50,0.04)', border: '1px solid rgba(46,125,50,0.1)' }}>
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#2E7D32' }} />
+                <p className="text-xs leading-relaxed" style={{ color: '#64748B' }}>
+                  Progress is <span className="font-semibold">automatically calculated</span> based on milestone completion. Mark milestones below to update progress.
+                </p>
+              </div>
+
+              {/* Milestones as checkboxes */}
+              <div>
+                <label className="form-label">Milestones</label>
+                <div className="space-y-2">
+                  {activity.milestones.map((m) => {
+                    const isChecked = m.completed || milestoneToggles[m.id];
+                    return (
+                      <label
+                        key={m.id}
+                        className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${m.completed ? 'opacity-60' : 'hover:shadow-sm'}`}
+                        style={{ background: isChecked ? 'rgba(46,125,50,0.04)' : '#F8FAFC' }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          disabled={m.completed}
+                          onChange={(e) => {
+                            if (!m.completed) {
+                              setMilestoneToggles((prev) => ({ ...prev, [m.id]: e.target.checked }));
+                            }
+                          }}
+                          className="w-4 h-4 rounded"
+                          style={{ accentColor: '#2E7D32' }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium" style={{ color: '#1E293B' }}>{m.title}</p>
+                          {m.completed && m.completedDate && (
+                            <p className="text-[11px]" style={{ color: '#94A3B8' }}>Completed: {formatDate(m.completedDate)}</p>
+                          )}
+                        </div>
+                        {isChecked && <CheckCircle2 className="w-4 h-4 shrink-0" style={{ color: '#2E7D32' }} />}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div>
                 <label className="form-label">Update Note</label>
                 <textarea className="form-textarea" placeholder="Describe what was accomplished..." rows={3}></textarea>
-              </div>
-              <div>
-                <label className="form-label">Mark Milestone Completed (Optional)</label>
-                <select className="form-select">
-                  <option value="">-- None --</option>
-                  {activity.milestones.filter(m => !m.completed).map(m => (
-                    <option key={m.id} value={m.id}>{m.title}</option>
-                  ))}
-                </select>
               </div>
             </div>
             <div className="px-6 py-4 border-t flex justify-end gap-3" style={{ borderColor: '#F1F5F9' }}>
               <button onClick={() => setShowUpdateModal(false)} className="btn-outline">Cancel</button>
               <button onClick={() => {
-                // In a real app, this would mutate state/make an API call
                 setShowUpdateModal(false);
-                alert('Progress update submitted successfully! (Demo)');
+                setMilestoneToggles({});
+                alert(`Progress updated to ${getAutoProgress()}%! (Demo)`);
               }} className="btn-primary">Submit Update</button>
             </div>
           </div>

@@ -5,15 +5,18 @@ import { Building2, Search, Plus, ArrowRight, TrendingUp, Activity } from 'lucid
 import Link from 'next/link';
 import { directorates } from '@/data/directorates';
 import { getUnitsByDirectorate } from '@/data/units';
+import { useAuth } from '@/lib/auth-context';
 
 export default function DirectoratesPage() {
+  const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [showCreate, setShowCreate] = useState(false);
 
-  const filtered = directorates.filter((d) =>
-    d.name.toLowerCase().includes(search.toLowerCase()) ||
-    d.code.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = directorates.filter((d) => {
+    const matchSearch = d.name.toLowerCase().includes(search.toLowerCase()) || d.code.toLowerCase().includes(search.toLowerCase());
+    const matchRole = user?.role === 'directorate_admin' ? d.id === user.directorateId : true;
+    return matchSearch && matchRole;
+  });
 
   return (
     <div className="space-y-6 animate-fade-in">

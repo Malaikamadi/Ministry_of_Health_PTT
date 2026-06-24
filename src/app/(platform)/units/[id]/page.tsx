@@ -1,11 +1,12 @@
 'use client';
 
 import { use } from 'react';
-import { ClipboardCheck, ArrowLeft, Activity, CheckCircle2, AlertTriangle, TrendingUp, User } from 'lucide-react';
+import { ClipboardCheck, ArrowLeft, Activity, CheckCircle2, AlertTriangle, TrendingUp, User, FileText, Download } from 'lucide-react';
 import Link from 'next/link';
 import { units } from '@/data/units';
 import { directorates } from '@/data/directorates';
 import { getActivitiesByUnit, activityStatusConfig } from '@/data/activities';
+import { getReportsByUnit, reportStatusConfig, reportTypeLabels } from '@/data/unit-reports';
 import { formatDate } from '@/lib/utils';
 
 export default function UnitDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -24,6 +25,7 @@ export default function UnitDetailPage({ params }: { params: Promise<{ id: strin
 
   const directorate = directorates.find((d) => d.id === unit.directorateId);
   const unitActivities = getActivitiesByUnit(id);
+  const reports = getReportsByUnit(id);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -75,6 +77,43 @@ export default function UnitDetailPage({ params }: { params: Promise<{ id: strin
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div className="card overflow-hidden">
+        <div className="section-header"><h3 className="heading-section">Unit Reports</h3></div>
+        {reports.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead><tr><th>Report Title</th><th>Type</th><th>Period</th><th>Uploaded By</th><th>Date</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                {reports.map((report) => {
+                  const statusCfg = reportStatusConfig[report.status];
+                  return (
+                    <tr key={report.id}>
+                      <td>
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 shrink-0" style={{ color: '#0F4C81' }} />
+                          <span className="text-sm font-medium" style={{ color: '#1E293B' }}>{report.title}</span>
+                        </div>
+                      </td>
+                      <td><span className="badge-slate badge text-[10px]">{reportTypeLabels[report.reportType]}</span></td>
+                      <td className="text-sm">{report.period}</td>
+                      <td className="text-sm">{report.uploadedBy}</td>
+                      <td className="text-sm tabular-nums">{formatDate(report.uploadedAt)}</td>
+                      <td><span className={`${statusCfg.badgeClass} badge text-[10px]`}>{statusCfg.label}</span></td>
+                      <td><button className="btn-ghost btn-sm" title="Download"><Download className="w-3.5 h-3.5" /></button></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="empty-state py-8">
+            <FileText className="w-10 h-10 mb-2" style={{ color: '#94A3B8' }} />
+            <p className="text-sm font-medium" style={{ color: '#64748B' }}>No reports submitted yet</p>
+          </div>
+        )}
       </div>
     </div>
   );

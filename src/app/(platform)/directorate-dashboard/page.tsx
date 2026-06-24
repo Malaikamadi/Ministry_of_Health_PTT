@@ -1,6 +1,7 @@
 'use client';
 
-import { Building2, Activity, CheckCircle2, AlertTriangle, TrendingUp, ArrowRight, Clock, FileText, FolderOpen, BarChart3 } from 'lucide-react';
+import { useState } from 'react';
+import { Building2, Activity, CheckCircle2, AlertTriangle, TrendingUp, ArrowRight, Clock, FileText, FolderOpen, BarChart3, Plus, Settings, Users, X } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { directorates } from '@/data/directorates';
@@ -10,6 +11,8 @@ import { formatDate } from '@/lib/utils';
 
 export default function DirectorateDashboard() {
   const { user } = useAuth();
+  const [showAddUnit, setShowAddUnit] = useState(false);
+  const [showAddProgramme, setShowAddProgramme] = useState(false);
 
   const directorateId = user?.directorateId || 'dir-003';
   const directorate = directorates.find((d) => d.id === directorateId) || directorates[2];
@@ -24,6 +27,8 @@ export default function DirectorateDashboard() {
   }).length;
   const performanceScore = directorate.performanceScore;
 
+  const ministryAvg = Math.round(directorates.reduce((s, d) => s + d.performanceScore, 0) / directorates.length);
+
   const awaitingReview = dirActivities.filter((a) => a.status === 'pending_verification' || a.status === 'submitted');
   const recentEvidence = dirActivities
     .flatMap((a) => a.evidence.map((ev) => ({ ...ev, activityTitle: a.title, activityId: a.id })))
@@ -34,6 +39,9 @@ export default function DirectorateDashboard() {
     .filter((a) => a.status !== 'completed' && new Date(a.endDate) >= new Date())
     .sort((a, b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime())
     .slice(0, 4);
+
+  // Rank directorates for comparison
+  const rankedDirs = [...directorates].sort((a, b) => b.performanceScore - a.performanceScore);
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -55,20 +63,110 @@ export default function DirectorateDashboard() {
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Link href="/activities" className="btn-primary btn-sm"><Activity className="w-4 h-4" /> View Activities</Link>
             <Link href="/reports" className="btn-outline btn-sm"><FileText className="w-4 h-4" /> Reports</Link>
+            {/* Feedback #8: Dynamic management actions */}
+            <button onClick={() => setShowAddUnit(true)} className="btn-secondary btn-sm"><Plus className="w-4 h-4" /> Add Unit</button>
           </div>
         </div>
+      </div>
+
+      {/* Feedback #8: Quick Management Actions */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <button
+          onClick={() => setShowAddUnit(true)}
+          className="flex items-center gap-3 p-4 rounded-xl border transition-all hover:shadow-md hover:scale-[1.01] active:scale-[0.99] text-left"
+          style={{ borderColor: '#E2E8F0', background: 'linear-gradient(135deg, rgba(15,76,129,0.02), rgba(15,76,129,0.06))' }}
+        >
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(15,76,129,0.1)' }}>
+            <Users className="w-5 h-5" style={{ color: '#0F4C81' }} />
+          </div>
+          <div>
+            <p className="text-sm font-bold" style={{ color: '#0F4C81' }}>Add Unit</p>
+            <p className="text-xs" style={{ color: '#94A3B8' }}>Create a new unit</p>
+          </div>
+        </button>
+        <button
+          onClick={() => setShowAddProgramme(true)}
+          className="flex items-center gap-3 p-4 rounded-xl border transition-all hover:shadow-md hover:scale-[1.01] active:scale-[0.99] text-left"
+          style={{ borderColor: '#E2E8F0', background: 'linear-gradient(135deg, rgba(0,137,123,0.02), rgba(0,137,123,0.06))' }}
+        >
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(0,137,123,0.1)' }}>
+            <FolderOpen className="w-5 h-5" style={{ color: '#00897B' }} />
+          </div>
+          <div>
+            <p className="text-sm font-bold" style={{ color: '#00897B' }}>Add Programme</p>
+            <p className="text-xs" style={{ color: '#94A3B8' }}>Create a programme</p>
+          </div>
+        </button>
+        <Link
+          href="/progress"
+          className="flex items-center gap-3 p-4 rounded-xl border transition-all hover:shadow-md hover:scale-[1.01] active:scale-[0.99] text-left"
+          style={{ borderColor: '#E2E8F0', background: 'linear-gradient(135deg, rgba(46,125,50,0.02), rgba(46,125,50,0.06))' }}
+        >
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(46,125,50,0.1)' }}>
+            <BarChart3 className="w-5 h-5" style={{ color: '#2E7D32' }} />
+          </div>
+          <div>
+            <p className="text-sm font-bold" style={{ color: '#2E7D32' }}>Performance Monitoring</p>
+            <p className="text-xs" style={{ color: '#94A3B8' }}>View detailed analytics</p>
+          </div>
+        </Link>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 stagger-children">
         <KpiCard icon={Building2} label="Total Units" value={`${dirUnits.length}`} color="#0F4C81" bg="rgba(15,76,129,0.08)" />
-        <KpiCard icon={Activity} label="Active Activities" value={`${activeActs}`} color="#0F4C81" bg="rgba(15,76,129,0.08)" />
+        <KpiCard icon={Activity} label="Ongoing Activities" value={`${activeActs}`} color="#0F4C81" bg="rgba(15,76,129,0.08)" />
         <KpiCard icon={CheckCircle2} label="Completed" value={`${completedActs}`} color="#2E7D32" bg="rgba(46,125,50,0.08)" />
         <KpiCard icon={AlertTriangle} label="Delayed" value={`${delayedActs}`} color="#C62828" bg="rgba(198,40,40,0.08)" />
         <KpiCard icon={TrendingUp} label="Performance" value={`${performanceScore}%`} color="#00897B" bg="rgba(0,137,123,0.08)" />
+      </div>
+
+      {/* Feedback #10: Performance Comparison with other Directorates & Ministry */}
+      <div className="card overflow-hidden">
+        <div className="section-header">
+          <div>
+            <h3 className="heading-section">Performance Comparison</h3>
+            <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>Compare {directorate.code} to other directorates and the Ministry overall</p>
+          </div>
+          <Link href="/progress" className="btn-ghost btn-sm">Details <ArrowRight className="w-3.5 h-3.5" /></Link>
+        </div>
+        <div className="p-5 space-y-3">
+          {/* Ministry Average */}
+          <div className="p-3 rounded-xl flex items-center justify-between" style={{ background: 'rgba(0,137,123,0.04)', border: '1px solid rgba(0,137,123,0.1)' }}>
+            <div className="flex items-center gap-2">
+              <Building2 className="w-4 h-4" style={{ color: '#00897B' }} />
+              <span className="text-sm font-semibold" style={{ color: '#1E293B' }}>Ministry Average</span>
+            </div>
+            <span className="text-sm font-bold tabular-nums" style={{ color: '#00897B' }}>{ministryAvg}%</span>
+          </div>
+          {/* Directorate bars */}
+          {rankedDirs.map((dir) => {
+            const isCurrent = dir.id === directorate.id;
+            const textColor = dir.performanceScore >= 70 ? '#2E7D32' : dir.performanceScore >= 50 ? '#0F4C81' : '#C62828';
+            return (
+              <div key={dir.id} className="flex items-center gap-3" style={{ opacity: isCurrent ? 1 : 0.7 }}>
+                <span className={`badge text-[10px] font-bold w-14 text-center ${isCurrent ? 'badge-primary' : 'badge-slate'}`}>{dir.code}</span>
+                <div className="flex-1">
+                  <div className="progress-track h-2.5">
+                    <div className="progress-fill" style={{
+                      width: `${dir.performanceScore}%`,
+                      background: isCurrent
+                        ? 'linear-gradient(90deg, #0F4C81, #1565A8)'
+                        : dir.performanceScore >= 70 ? '#43A047' : dir.performanceScore >= 50 ? '#90A4AE' : '#EF9A9A',
+                    }} />
+                  </div>
+                </div>
+                <span className="text-xs font-bold tabular-nums w-10 text-right" style={{ color: isCurrent ? textColor : '#94A3B8' }}>
+                  {dir.performanceScore}%
+                </span>
+                {isCurrent && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: 'rgba(15,76,129,0.1)', color: '#0F4C81' }}>YOU</span>}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Unit Performance Comparison */}
@@ -208,6 +306,69 @@ export default function DirectorateDashboard() {
                 </Link>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Feedback #8: Add Unit Modal */}
+      {showAddUnit && (
+        <div className="modal-overlay" onClick={() => setShowAddUnit(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="px-6 py-5 border-b flex items-center justify-between" style={{ borderColor: '#F1F5F9' }}>
+              <div>
+                <h2 className="text-lg font-bold" style={{ color: '#1E293B' }}>Add New Unit</h2>
+                <p className="text-sm mt-1" style={{ color: '#94A3B8' }}>Create a new unit under {directorate.code}</p>
+              </div>
+              <button onClick={() => setShowAddUnit(false)} className="btn-ghost btn-sm"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div><label className="form-label">Unit Name</label><input type="text" className="form-input" placeholder="e.g., Environmental Health Unit" /></div>
+              <div><label className="form-label">Description</label><textarea className="form-textarea" placeholder="Brief description of this unit's role..." /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="form-label">Focal Person Name</label><input type="text" className="form-input" placeholder="Full name" /></div>
+                <div><label className="form-label">Focal Person Email</label><input type="email" className="form-input" placeholder="email@mohs.gov.sl" /></div>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t flex justify-end gap-3" style={{ borderColor: '#F1F5F9' }}>
+              <button onClick={() => setShowAddUnit(false)} className="btn-outline">Cancel</button>
+              <button onClick={() => { setShowAddUnit(false); alert('Unit created successfully! (Demo)'); }} className="btn-primary"><Plus className="w-4 h-4" /> Create Unit</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Feedback #8: Add Programme Modal */}
+      {showAddProgramme && (
+        <div className="modal-overlay" onClick={() => setShowAddProgramme(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="px-6 py-5 border-b flex items-center justify-between" style={{ borderColor: '#F1F5F9' }}>
+              <div>
+                <h2 className="text-lg font-bold" style={{ color: '#1E293B' }}>Add New Programme</h2>
+                <p className="text-sm mt-1" style={{ color: '#94A3B8' }}>Create a new programme under {directorate.code}</p>
+              </div>
+              <button onClick={() => setShowAddProgramme(false)} className="btn-ghost btn-sm"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div><label className="form-label">Programme Name</label><input type="text" className="form-input" placeholder="e.g., Adolescent Health Programme" /></div>
+              <div><label className="form-label">Description</label><textarea className="form-textarea" placeholder="Programme objectives and scope..." /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="form-label">Assign to Unit</label>
+                  <select className="form-select">
+                    <option value="">Select a unit...</option>
+                    {dirUnits.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+                  </select>
+                </div>
+                <div><label className="form-label">Programme Lead</label><input type="text" className="form-input" placeholder="Lead person name" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="form-label">Start Date</label><input type="date" className="form-input" /></div>
+                <div><label className="form-label">End Date</label><input type="date" className="form-input" /></div>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t flex justify-end gap-3" style={{ borderColor: '#F1F5F9' }}>
+              <button onClick={() => setShowAddProgramme(false)} className="btn-outline">Cancel</button>
+              <button onClick={() => { setShowAddProgramme(false); alert('Programme created successfully! (Demo)'); }} className="btn-primary"><Plus className="w-4 h-4" /> Create Programme</button>
+            </div>
           </div>
         </div>
       )}
