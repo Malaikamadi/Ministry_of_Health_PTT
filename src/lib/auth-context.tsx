@@ -51,7 +51,7 @@ export const DEMO_USERS: AuthUser[] = [
     name: 'Dr. Tom Seasay',
     email: 'director.dppi@mohs.gov.sl',
     directorate: 'Directorate of Policy, Planning & Information',
-    directorateId: 'dir-003',
+    directorateId: 'dir-001',
   },
   {
     id: 'uf-001',

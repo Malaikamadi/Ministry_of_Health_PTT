@@ -142,8 +142,8 @@ function UnitFocalView() {
 ──────────────────────────────────────────────────────────────── */
 function DirectorateAdminView() {
   const { user } = useAuth();
-  const directorateId = user?.directorateId || 'dir-003';
-  const directorate = directorates.find((d) => d.id === directorateId) || directorates[2];
+  const directorateId = user?.directorateId || 'dir-001';
+  const directorate = directorates.find((d) => d.id === directorateId) || directorates[0];
   const dirActivities = getActivitiesByDirectorate(directorateId);
   const dirUnits = getUnitsByDirectorate(directorateId);
 
