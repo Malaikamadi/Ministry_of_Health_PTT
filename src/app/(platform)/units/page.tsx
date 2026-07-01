@@ -13,7 +13,11 @@ export default function UnitsPage() {
   const [filterDir, setFilterDir] = useState('all');
   const [showCreate, setShowCreate] = useState(false);
 
+  const isUnitFocal = user?.role === 'unit_focal';
+
   const filtered = units.filter((u) => {
+    // Unit focal users only see their own unit
+    if (isUnitFocal) return u.id === user?.unitId;
     const matchSearch = u.name.toLowerCase().includes(search.toLowerCase()) || u.focalPerson.toLowerCase().includes(search.toLowerCase());
     const matchDir = filterDir === 'all' ? true : u.directorateId === filterDir;
     const matchRole = user?.role === 'directorate_admin' ? u.directorateId === user.directorateId : true;
@@ -25,21 +29,27 @@ export default function UnitsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="heading-page">Units</h1>
-          <p className="text-sm mt-1" style={{ color: '#64748B' }}>Manage units across all directorates.</p>
+          <p className="text-sm mt-1" style={{ color: '#64748B' }}>
+            {isUnitFocal ? 'Your unit details and performance.' : 'Manage units across all directorates.'}
+          </p>
         </div>
-        <button onClick={() => setShowCreate(true)} className="btn-primary"><Plus className="w-4 h-4" /> Create Unit</button>
+        {!isUnitFocal && (
+          <button onClick={() => setShowCreate(true)} className="btn-primary"><Plus className="w-4 h-4" /> Create Unit</button>
+        )}
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#94A3B8' }} />
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search units..." className="form-input pl-10" />
+      {!isUnitFocal && (
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#94A3B8' }} />
+            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search units..." className="form-input pl-10" />
+          </div>
+          <select value={filterDir} onChange={(e) => setFilterDir(e.target.value)} className="form-select max-w-xs">
+            <option value="all">All Directorates</option>
+            {directorates.map((d) => <option key={d.id} value={d.id}>{d.code} — {d.name}</option>)}
+          </select>
         </div>
-        <select value={filterDir} onChange={(e) => setFilterDir(e.target.value)} className="form-select max-w-xs">
-          <option value="all">All Directorates</option>
-          {directorates.map((d) => <option key={d.id} value={d.id}>{d.code} — {d.name}</option>)}
-        </select>
-      </div>
+      )}
 
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">

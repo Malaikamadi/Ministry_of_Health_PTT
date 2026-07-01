@@ -7,7 +7,6 @@ import {
   Building2,
   Users,
   Activity,
-  BarChart3,
   FileText,
   ClipboardCheck,
   FolderOpen,
@@ -105,7 +104,7 @@ export function Sidebar() {
         label: 'My Work',
         items: [
           { href: '/activities', label: 'Activities', icon: Activity },
-          { href: '/progress', label: 'Progress Updates', icon: BarChart3 },
+          { href: '/progress', label: 'Performance Monitoring', icon: TrendingUp },
           { href: '/evidence', label: 'Evidence Uploads', icon: FolderOpen },
         ],
       },
