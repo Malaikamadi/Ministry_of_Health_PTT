@@ -5,9 +5,11 @@ import { Activity, Search, Plus, Filter, TrendingUp, Upload, CheckCircle2, Alert
 import Link from 'next/link';
 import { activities, activityStatusConfig, type ActivityStatus } from '@/data/activities';
 import { directorates } from '@/data/directorates';
+import { useAuth } from '@/lib/auth-context';
 import { formatDate } from '@/lib/utils';
 
 export default function ActivitiesPage() {
+  const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [filterDir, setFilterDir] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -18,7 +20,14 @@ export default function ActivitiesPage() {
   const [selectedActivity, setSelectedActivity] = useState<any>(null);
   const [milestoneToggles, setMilestoneToggles] = useState<Record<string, boolean>>({});
 
-  const filtered = activities.filter((a) => {
+  // Scope activities by role
+  const scopedActivities = user?.role === 'directorate_admin'
+    ? activities.filter((a) => a.directorateId === user.directorateId)
+    : user?.role === 'unit_focal'
+    ? activities.filter((a) => a.directorateId === user.directorateId)
+    : activities;
+
+  const filtered = scopedActivities.filter((a) => {
     const matchSearch = a.title.toLowerCase().includes(search.toLowerCase()) || a.unitName.toLowerCase().includes(search.toLowerCase());
     const matchDir = filterDir === 'all' || a.directorateId === filterDir;
     const matchStatus = filterStatus === 'all' || a.status === filterStatus;
@@ -81,10 +90,12 @@ export default function ActivitiesPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#94A3B8' }} />
             <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search activities..." className="form-input pl-10" />
           </div>
-          <select value={filterDir} onChange={(e) => setFilterDir(e.target.value)} className="form-select lg:w-56">
-            <option value="all">All Directorates</option>
-            {directorates.map((d) => <option key={d.id} value={d.id}>{d.code}</option>)}
-          </select>
+          {user?.role === 'super_admin' && (
+            <select value={filterDir} onChange={(e) => setFilterDir(e.target.value)} className="form-select lg:w-56">
+              <option value="all">All Directorates</option>
+              {directorates.map((d) => <option key={d.id} value={d.id}>{d.code}</option>)}
+            </select>
+          )}
           <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="form-select lg:w-48">
             <option value="all">All Statuses</option>
             {Object.entries(activityStatusConfig).map(([key, cfg]) => (
@@ -100,7 +111,7 @@ export default function ActivitiesPage() {
         </div>
         <div className="flex items-center gap-2 mt-3 text-xs" style={{ color: '#94A3B8' }}>
           <Filter className="w-3 h-3" />
-          <span>Showing {filtered.length} of {activities.length} activities</span>
+          <span>Showing {filtered.length} of {scopedActivities.length} activities</span>
         </div>
       </div>
 
